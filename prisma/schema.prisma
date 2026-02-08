@@ -1,0 +1,69 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Contact {
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  age       Int?
+  status    String?  @default("active")
+  accountId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([accountId])
+  @@index([email])
+  @@unique([accountId, email])
+}
+
+enum BulkActionStatus {
+  queued
+  processing
+  completed
+  failed
+}
+
+enum BulkActionLogStatus {
+  success
+  failure
+  skipped
+}
+
+model BulkAction {
+  id          String           @id @default(cuid())
+  accountId   String
+  entityType  String
+  actionType  String
+  status      BulkActionStatus @default(queued)
+  totalCount  Int              @default(0)
+  scheduledAt DateTime?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  completedAt DateTime?
+
+  logs BulkActionLog[]
+
+  @@index([accountId])
+  @@index([accountId, status])
+}
+
+model BulkActionLog {
+  id           String             @id @default(cuid())
+  bulkActionId String
+  entityId     String
+  status       BulkActionLogStatus
+  errorMessage String?
+  skipReason   String?
+  processedAt  DateTime           @default(now())
+
+  bulkAction BulkAction @relation(fields: [bulkActionId], references: [id], onDelete: Cascade)
+
+  @@index([bulkActionId])
+  @@index([bulkActionId, status])
+}

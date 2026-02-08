@@ -1,0 +1,194 @@
+{
+  "info": {
+    "name": "Bulk Action Platform",
+    "description": "API collection for the Bulk Action Platform CRM",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3000" },
+    { "key": "actionId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "List Contacts (for testing)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/contacts?accountId=acc_001&limit=10",
+          "host": ["{{baseUrl}}"],
+          "path": ["contacts"],
+          "query": [
+            { "key": "accountId", "value": "acc_001" },
+            { "key": "limit", "value": "10" }
+          ]
+        },
+        "description": "Get contact IDs for use in bulk action requests"
+      }
+    },
+    {
+      "name": "Health",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/health",
+        "description": "Health check endpoint"
+      }
+    },
+    {
+      "name": "List Bulk Actions",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/bulk-actions?accountId=acc_001&limit=20&offset=0",
+          "host": ["{{baseUrl}}"],
+          "path": ["bulk-actions"],
+          "query": [
+            { "key": "accountId", "value": "acc_001", "description": "Filter by account" },
+            { "key": "status", "value": "queued", "description": "queued|processing|completed|failed" },
+            { "key": "limit", "value": "20" },
+            { "key": "offset", "value": "0" }
+          ]
+        },
+        "description": "List all bulk actions with optional filters"
+      }
+    },
+    {
+      "name": "Create Bulk Action (Bulk Update)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "if (pm.response.code === 201) {",
+              "    const json = pm.response.json();",
+              "    if (json.id) pm.collectionVariables.set('actionId', json.id);",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [{"key": "Content-Type", "value": "application/json"}],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"accountId\": \"acc_001\",\n  \"entityType\": \"Contact\",\n  \"actionType\": \"bulk-update\",\n  \"entityIds\": [\"REPLACE_WITH_CONTACT_ID_1\", \"REPLACE_WITH_CONTACT_ID_2\"],\n  \"payload\": {\n    \"status\": \"active\",\n    \"age\": 30\n  }\n}"
+        },
+        "url": "{{baseUrl}}/bulk-actions",
+        "description": "Create a bulk update action. Replace entityIds with actual Contact IDs from your database."
+      }
+    },
+    {
+      "name": "Create Bulk Action (entityIdsCsv)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "if (pm.response.code === 201) {",
+              "    const json = pm.response.json();",
+              "    if (json.id) pm.collectionVariables.set('actionId', json.id);",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [{"key": "Content-Type", "value": "application/json"}],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"accountId\": \"acc_001\",\n  \"entityType\": \"Contact\",\n  \"actionType\": \"bulk-update\",\n  \"entityIdsCsv\": \"REPLACE_WITH_CONTACT_ID_1,REPLACE_WITH_CONTACT_ID_2\",\n  \"payload\": {\n    \"status\": \"active\"\n  }\n}"
+        },
+        "url": "{{baseUrl}}/bulk-actions",
+        "description": "Create bulk action using CSV string. Replace entityIdsCsv with contact IDs from List Contacts (comma or newline separated)."
+      }
+    },
+    {
+      "name": "Create Bulk Action (from CSV file)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "if (pm.response.code === 201) {",
+              "    const json = pm.response.json();",
+              "    if (json.id) pm.collectionVariables.set('actionId', json.id);",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {"key": "file", "type": "file", "src": [], "description": "Select CSV with entity IDs (one per line or comma-separated). Run List Contacts first."},
+            {"key": "accountId", "value": "acc_001"},
+            {"key": "entityType", "value": "Contact"},
+            {"key": "actionType", "value": "bulk-update"},
+            {"key": "payload", "value": "{\"status\":\"active\"}"}
+          ]
+        },
+        "url": "{{baseUrl}}/bulk-actions/from-csv",
+        "description": "Upload CSV file. Field name must be 'file'. CSV: one ID per line or comma-separated."
+      }
+    },
+    {
+      "name": "Create Bulk Action (Scheduled)",
+      "request": {
+        "method": "POST",
+        "header": [{"key": "Content-Type", "value": "application/json"}],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"accountId\": \"acc_001\",\n  \"entityType\": \"Contact\",\n  \"actionType\": \"bulk-update\",\n  \"entityIds\": [\"REPLACE_WITH_CONTACT_ID\"],\n  \"payload\": {\n    \"status\": \"inactive\"\n  },\n  \"scheduledAt\": \"2025-12-31T23:15:00Z\"\n}"
+        },
+        "url": "{{baseUrl}}/bulk-actions",
+        "description": "Create a scheduled bulk action (runs at specified time)"
+      }
+    },
+    {
+      "name": "Get Bulk Action Details",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/bulk-actions/{{actionId}}",
+        "description": "Get bulk action details including progress"
+      }
+    },
+    {
+      "name": "Get Bulk Action Stats",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/bulk-actions/{{actionId}}/stats",
+        "description": "Get success, failure, and skipped counts"
+      }
+    },
+    {
+      "name": "Get Bulk Action Logs",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/bulk-actions/{{actionId}}/logs?status=success&limit=50&offset=0",
+          "host": ["{{baseUrl}}"],
+          "path": ["bulk-actions", "{{actionId}}", "logs"],
+          "query": [
+            { "key": "status", "value": "success", "description": "success|failure|skipped" },
+            { "key": "limit", "value": "50" },
+            { "key": "offset", "value": "0" }
+          ]
+        },
+        "description": "Get paginated logs with optional status filter"
+      }
+    }
+  ]
+}

@@ -1,0 +1,35 @@
+# Artillery load test for Bulk Action Platform
+# Target: 1000+ entities/min. Run with: npm run load-test
+# Prerequisites: API running (npm run dev), Worker running (npm run worker), DB seeded
+
+config:
+  target: "http://localhost:3000"
+  processor: "./processor.js"
+  phases:
+    - duration: 60
+      arrivalRate: 5
+      name: "Sustained load - ~5 bulk actions/sec"
+    - duration: 30
+      arrivalRate: 20
+      name: "Spike - 20 bulk actions/sec"
+
+scenarios:
+  - name: "Create bulk action and poll status"
+    flow:
+      - post:
+          url: "/bulk-actions"
+          json:
+            accountId: "acc_001"
+            entityType: "Contact"
+            actionType: "bulk-update"
+            entityIds: "{{ contactIds }}"
+            payload:
+              status: "active"
+          capture:
+            - json: "$.id"
+              as: "actionId"
+      - think: 2
+      - get:
+          url: "/bulk-actions/{{ actionId }}"
+      - get:
+          url: "/bulk-actions/{{ actionId }}/stats"
